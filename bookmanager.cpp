@@ -2,7 +2,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
-
+#include <limits>
 class Book {
 public:
     // id， 书籍的唯一标识
@@ -72,10 +72,24 @@ public:
     }
     // 移除书籍，记得存储信息
     void remove_book(int book_id) {
-        // 自动查找书籍上是否存在，不存在不做任何操作
-        books.erase(std::remove_if(books.begin(), books.end(),
-            [book_id](const Book& book) { return book.book_id == book_id; }), books.end());
+    auto it = std::remove_if(books.begin(), books.end(),
+        [book_id](const Book& book) { return book.book_id == book_id; });
+
+    if (it != books.end()) {
+        // 找到了要删除的书籍
+        books.erase(it, books.end());
+
+        // 调整之后的书籍的 ID
+        for (auto& book : books) {
+            if (book.book_id > book_id) {
+                book.book_id -= 1;
+            }
+        }
+
         save_data();
+    } else {
+        std::cout << "Book with ID " << book_id << " not found.\n";
+    }
     }
     // 更新书籍信息，为了减少复杂性，直接更新所有属性
     void update_book(int book_id, const std::string& new_title, const std::string& new_author, int new_year) {
@@ -140,6 +154,8 @@ int main() {
                 std::cout << "Enter book details:\n";
                 std::cout << "ID: ";
                 std::cin >> id;
+                // clear缓冲区
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 std::cout << "Title: ";
                 std::getline(std::cin, title);
                 std::cout << "Author: ";
@@ -165,9 +181,10 @@ int main() {
 
                 std::cout << "Enter the ID of the book to update: ";
                 std::cin >> book_id;
-
                 std::cout << "Enter updated book details:\n";
                 std::cout << "Title: ";
+                // clear缓冲区
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 std::getline(std::cin, title);
                 std::cout << "Author: ";
                 std::getline(std::cin, author);
@@ -181,13 +198,21 @@ int main() {
                 // 搜索书籍
                 std::string keyword;
                 std::cout << "Enter search keyword: ";
-                std::getline(std::cin, keyword);
+                std::cin >> keyword;
                 library.search_book(keyword);
                 break;
             }
             case 5: {
                 // 按照作者进行排序并显示
                 library.sort_books_by_author();
+                break;
+            }
+            case 6: {
+                // 按照作者进行排序并显示
+                int id;
+                std::cout << "id: ";
+                std::cin >> id;
+                library.get_book(id);
                 break;
             }
             case 0: {
